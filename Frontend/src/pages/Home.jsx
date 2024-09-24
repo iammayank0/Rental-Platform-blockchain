@@ -9,7 +9,7 @@ const Home = () => {
             <header className="text-center py-12">
                 <h1 className="text-3xl font-bold text-gray-400 mb-4">Welcome to the Blockchain Rental System</h1>
                 <p className="text-xl text-gray-400 mb-8">Your go-to platform for seamless rental management on the blockchain.</p>
-                <Link to="/signup" className="btn-primary"><span className='text-gray-200 text-2xl font-serif underline'>Get Started</span></Link>
+                <Link to="/register" className="btn-primary"><span className='text-gray-200 text-2xl font-serif underline'>Get Started</span></Link>
             </header>
             <section className="container mx-auto py-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 ">

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-
+import { Link } from 'react-router-dom';
 const LoginPage = () => {
 
   const [email, setEmail] = useState('');
@@ -39,13 +39,13 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
+    <div className="min-h-screen flex items-center justify-center ">
+      <div className=" p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-2xl  text-gray-100 font-bold mb-6 text-center">Login</h2>
 
         <form onSubmit={handleLogin}>
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1" htmlFor="email">
+            <label className="block text-gray-100 text-sm font-medium mb-1" htmlFor="email">
               Email
             </label>
             <input
@@ -53,13 +53,14 @@ const LoginPage = () => {
               id="email"
               className="w-full px-4 py-2 border rounded-md focus:ring focus:ring-blue-200 focus:outline-none"
               value={email}
+              placeholder='example@ex.com'
               onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
 
           <div className="mb-6">
-            <label className="block text-sm font-medium mb-1" htmlFor="password">
+            <label className="block text-sm   text-gray-100 font-medium mb-1" htmlFor="password">
               Password
             </label>
             <input
@@ -67,6 +68,7 @@ const LoginPage = () => {
               id="password"
               className="w-full px-4 py-2 border rounded-md focus:ring focus:ring-blue-200 focus:outline-none"
               value={password}
+              placeholder='Enter password'
               onChange={(e) => setPassword(e.target.value)}
               required
             />
@@ -75,22 +77,21 @@ const LoginPage = () => {
           {error && (
             <div className="text-red-500 text-sm mb-4">{error}</div>
           )}
+          <div className='text-center'>
+              <button
+                type="submit"
+                className="text-white bg-gradient-to-br from-purple-600 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
+                disabled={loading}
+              >
+                {loading ? 'Logging in...' : 'Login'}
+              </button>
+          </div>
 
-          <button
-            type="submit"
-            className={`w-full py-2 px-4 text-white font-semibold rounded-md focus:outline-none transition-all duration-200 ${
-              loading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-            disabled={loading}
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
         </form>
 
         <div className='mt-3'>
-            <a href='/register' className='text-blue-400 '>Register a new user?</a>
+          <Link to = '/register' className='text-blue-400' ><span>Register a new user</span></Link>
+            {/* <a href='/register' className='text-blue-400 '>Register a new user?</a> */}
         </div>
       </div>
     </div>
