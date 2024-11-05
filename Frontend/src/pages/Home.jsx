@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import './Home.css'
+import './Home.css';
 
 const Home = () => {
-
     return (
         <div className='gradient-bg-welcome justify-center'>
             <header className="text-center py-12">
