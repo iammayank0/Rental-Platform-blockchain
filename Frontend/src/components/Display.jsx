@@ -9,7 +9,10 @@ const Display = () => {
     useEffect(() => {
         const fetchProperties = async () => {
             const propertiesData = await getProperties();
+            console.log("Properties: " + propertiesData);
             setProperties(propertiesData);
+            console.log("Properties: " + properties);
+
         };
 
         fetchProperties();

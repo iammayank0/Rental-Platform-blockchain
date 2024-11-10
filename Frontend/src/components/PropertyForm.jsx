@@ -30,7 +30,7 @@ const PropertyForm = ({contract, setContract}) => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    const REACT_APP_PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiJiZjEzNWJmZS0wOTc5LTQ5ODctOTkwNS02YWRkNDFkNDc3NmYiLCJlbWFpbCI6ImluZm8uc2hveWRvbkBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiNGI1MDNhOWMxNDJmZGRjNzg0M2EiLCJzY29wZWRLZXlTZWNyZXQiOiJmNmRmOWM4NzIwMTI5MzhhNzc5YzQwZTU4MWFjZjg2ZGM4YTEwYjY1OTQwZTVmYzhkMmQ4NjE5ODAzNjlkMjU1IiwiZXhwIjoxNzU3NTA5NDcwfQ.QlNb6rmDSz6uEIiVHTACsnOXV8YzHUw_vdcrRYs7xN8";
+    const REACT_APP_PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiJlOWQwZDE4ZC1iOGMxLTRhYzctYjY1Zi1kZThkZmY2OWRhYjgiLCJlbWFpbCI6ImpheWVzaG55YWRhdjQ5N0BnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiYzBlZjgyZTE3YmRmNzUwZTQ5OTYiLCJzY29wZWRLZXlTZWNyZXQiOiI3ZmNkMTBmZGM3ZThlMGUwN2IyODY3YjdiMjc5MTY3ZjdiNzA4MjU5MzdiYTgxNmYwMzE1MTZiNjY1ZTFhOWJkIiwiZXhwIjoxNzYyNzg5MDAyfQ.PSTSabJMtIlH05GPBW6x9GSR4SngpQe5IZNklsaohoA";
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -77,7 +77,7 @@ const PropertyForm = ({contract, setContract}) => {
         return `https://ipfs.io/ipfs/${resDataJson.IpfsHash}`;
     };
 
-    const mintProperty = async () => {
+    const mintProperty = async (uri) => {
         try {
             // if(!contract){
                 const contract = await contractInstance();
@@ -109,7 +109,7 @@ const PropertyForm = ({contract, setContract}) => {
             const depositAmount = ethers.parseEther(property.depositMoney);
     
             await contract.mintProperty(
-                "QmdMPFAQDg9146xBN6SJoNBJDsMTJ33uCdc8aWG8qjWjEB",
+                uri,
                 pricePerUnitTime,
                 availableFrom,
                 minimumTime,
@@ -132,53 +132,55 @@ const PropertyForm = ({contract, setContract}) => {
         setSuccess('');
 
         try {
-            // toast.info("Uploading images to IPFS", { position: "top-center" });
+            toast.info("Uploading images to IPFS", { position: "top-center" });
 
-            // if (!property.images) {
-            //     throw new Error("No images selected");
-            // }
+            if (!property.images) {
+                throw new Error("No images selected");
+            }
 
-            // const imageUrls = await Promise.all(
-            //     Array.from(property.images).map((image) => uploadToIPFS(image))
-            // );
+            const imageUrls = await Promise.all(
+                Array.from(property.images).map((image) => uploadToIPFS(image))
+            );
 
-            // toast.info("Images uploaded to IPFS!", { position: "top-center" });
+            toast.info("Images uploaded to IPFS!", { position: "top-center" });
 
-            // const propertyData = {
-            //     ...property,
-            //     images: imageUrls,
-            // };
+            const propertyData = {
+                ...property,
+                images: imageUrls,
+            };
 
-            // const data = JSON.stringify({
-            //     pinataContent: propertyData,
-            //     pinataMetadata: {
-            //         name: "PropertyData.json",
-            //     },
-            // });
+            const data = JSON.stringify({
+                pinataContent: propertyData,
+                pinataMetadata: {
+                    name: "PropertyData.json",
+                },
+            });
 
-            // toast.info("Uploading property data to IPFS", { position: "top-center" });
+            toast.info("Uploading property data to IPFS", { position: "top-center" });
 
-            // const res2 = await fetch(
-            //     "https://api.pinata.cloud/pinning/pinJSONToIPFS",
-            //     {
-            //         method: "POST",
-            //         headers: {
-            //             Authorization: `Bearer ${REACT_APP_PINATA_JWT}`,
-            //             "Content-Type": "application/json",
-            //         },
-            //         body: data,
-            //     }
-            // );
+            const res2 = await fetch(
+                "https://api.pinata.cloud/pinning/pinJSONToIPFS",
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${REACT_APP_PINATA_JWT}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: data,
+                }
+            );
 
-            // if (!res2.ok) {
-            //     throw new Error(`Failed to upload property data: ${res2.statusText}`);
-            // }
+            if (!res2.ok) {
+                throw new Error(`Failed to upload property data: ${res2.statusText}`);
+            }
 
-            // const resData2 = await res2.json();
-            // const uri = resData2.IpfsHash;
-            // setUri(uri);
-            // console.log("Property data saved to IPFS:", uri);
-            await mintProperty();
+            const resData2 = await res2.json();
+            const uri = resData2.IpfsHash;
+            console.log("Property data saved to IPFS:", uri);
+            if(uri.length === 0){
+                throw new Error("Invalid Uri!.");
+            }
+            await mintProperty(uri);
 
             setSuccess('Property listed successfully!');
             // setProperty({

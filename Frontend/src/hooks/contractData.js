@@ -6,7 +6,7 @@ import { AlchemyProvider } from 'ethers';
 import { Wallet } from 'ethers';
 
 // const contractAddress = '0xe12049a66792C836bcE6d0f48093Cef736DF6Baf';
-const contractAddress = "0x786e16f3f540Ab980270cffAC9e236E82925Ba83";
+const contractAddress = "0xc8a162E1d15a07c6adF9dd821ff2a0E120c875C0";
 // let contract, properties = [];
 
 const contractInstance = async () => {
@@ -24,30 +24,38 @@ const contractInstance = async () => {
 };
 
 const getProperty = async(contractProperty) => {
-    const propertyUri = `https://gold-quick-antelope-719.mypinata.cloud/ipfs/${contractProperty[i].tokenUri}`;
+    const propertyUri = `https://gold-quick-antelope-719.mypinata.cloud/ipfs/${contractProperty.tokenUri}`;
+    console.log("property uri: ", propertyUri);
     const isAvailable = contractProperty.isAvailable;
     const propertyId = contractProperty.tokenId;
     const owner = contractProperty.owner;
+    const response = await fetch(propertyUri);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch property data from ${propertyUri}`);
+    }
+    
+    const propertyData = await response.json();
     const property = {
-        address: propertyUri.address,
-        images: propertyUri.images,
-        description: propertyUri.description,
-        furnishing: propertyUri.furnishing,
-        pricePerDay: propertyUri.pricePerDay,
-        depositMoney: propertyUri.depositMoney,
-        area: propertyUri.area,
-        type: propertyUri.type,
-        parking: propertyUri.parking,
-        availableFrom: propertyUri.availableFrom,
-        availableFor: propertyUri.availableFor,
-        minDays: propertyUri.minDays,
-        maxDays: propertyUri.maxDays,
-        contactNumber: propertyUri.contactNumber,
+        address: propertyData.address,
+        images: propertyData.images,
+        description: propertyData.description,
+        furnishing: propertyData.furnishing,
+        pricePerDay: propertyData.pricePerDay,
+        depositMoney: propertyData.depositMoney,
+        area: propertyData.area,
+        type: propertyData.type,
+        parking: propertyData.parking,
+        availableFrom: propertyData.availableFrom,
+        availableFor: propertyData.availableFor,
+        minDays: propertyData.minDays,
+        maxDays: propertyData.maxDays,
+        contactNumber: propertyData.contactNumber,
         isAvailable: isAvailable,
         propertyId: propertyId,
         propertyUri: propertyUri,
         owner: owner,
     }; 
+    console.log("Property: ", property);
     return property;
 }
 
@@ -65,6 +73,7 @@ const getProperties = async () => {
             const property = await getProperty(contractProperties[i]);
             properties.push(property);
         }
+        console.log(properties);
         return properties;
     } catch (error) {
         console.error("Error fetching properties: ", error);
