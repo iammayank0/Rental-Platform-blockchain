@@ -8,6 +8,8 @@ dotenv.config({ path: './config.env' });
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
+const propertyRoutes = require('./routes/propertyRoutes');
+
 
 // Initialize the app
 const app = express();
@@ -23,6 +25,8 @@ app.use(express.json());
 
 // Mount routes
 app.use('/api/auth', authRoutes);
+
+app.use('/api/properties', propertyRoutes);
 
 // Connect to MongoDB
 const connectDB = async () => {
