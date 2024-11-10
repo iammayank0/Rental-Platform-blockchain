@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { toast } from 'react-toastify'; 
+import { ethers } from 'ethers';
+import { contractInstance } from '../hooks/contractData';
 
-const PropertyForm = () => {
+const PropertyForm = ({contract, setContract}) => {
     const [property, setProperty] = useState({
-        country: '',
-        state: '',
-        city: '',
+        // country: '',
+        // state: '',
+        // city: '',
         address: '',
         images: null,
         description: '',
         furnishing: '',
-        advanceMoney: '',
+        pricePerDay: '',
+        depositMoney: '',
         area: '',
         type: '',
         parking: [],
@@ -20,10 +24,13 @@ const PropertyForm = () => {
         maxDays: '',
         contactNumber: ''
     });
-    
+
     const [loading, setLoading] = useState(false);
+    const [uri, setUri] = useState("");
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    const REACT_APP_PINATA_JWT = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiJiZjEzNWJmZS0wOTc5LTQ5ODctOTkwNS02YWRkNDFkNDc3NmYiLCJlbWFpbCI6ImluZm8uc2hveWRvbkBnbWFpbC5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwicGluX3BvbGljeSI6eyJyZWdpb25zIjpbeyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJGUkExIn0seyJkZXNpcmVkUmVwbGljYXRpb25Db3VudCI6MSwiaWQiOiJOWUMxIn1dLCJ2ZXJzaW9uIjoxfSwibWZhX2VuYWJsZWQiOmZhbHNlLCJzdGF0dXMiOiJBQ1RJVkUifSwiYXV0aGVudGljYXRpb25UeXBlIjoic2NvcGVkS2V5Iiwic2NvcGVkS2V5S2V5IjoiNGI1MDNhOWMxNDJmZGRjNzg0M2EiLCJzY29wZWRLZXlTZWNyZXQiOiJmNmRmOWM4NzIwMTI5MzhhNzc5YzQwZTU4MWFjZjg2ZGM4YTEwYjY1OTQwZTVmYzhkMmQ4NjE5ODAzNjlkMjU1IiwiZXhwIjoxNzU3NTA5NDcwfQ.QlNb6rmDSz6uEIiVHTACsnOXV8YzHUw_vdcrRYs7xN8";
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -46,43 +53,156 @@ const PropertyForm = () => {
         });
     };
 
+    const uploadToIPFS = async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        const options = JSON.stringify({
+            cidVersion: 0,
+        });
+        formData.append("pinataOptions", options);
+        const metadata = JSON.stringify({
+            name: file.name,
+        });
+        formData.append("pinataMetadata", metadata);
+
+        const res = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${REACT_APP_PINATA_JWT}`,
+            },
+            body: formData,
+        });
+
+        const resDataJson = await res.json();
+        return `https://ipfs.io/ipfs/${resDataJson.IpfsHash}`;
+    };
+
+    const mintProperty = async () => {
+        try {
+            // if(!contract){
+                const contract = await contractInstance();
+                setContract(contract);
+                console.log("Contract: ", contract);
+            // }
+
+            const priceInWei = ethers.parseEther(property.pricePerDay);
+            const pricePerUnitTime = BigInt(priceInWei) / BigInt(86400);
+            console.log("price in wei: ",  priceInWei);
+            console.log("price per unit time: ", pricePerUnitTime);
+    
+            const availableFrom = Math.floor(new Date(property.availableFrom).getTime() / 1000);
+            console.log("available from: ", availableFrom);
+    
+            const minDays = parseInt(property.minDays, 10);
+            const maxDays = parseInt(property.maxDays, 10);
+
+    
+            if (isNaN(minDays) || isNaN(maxDays)) {
+                throw new Error("Invalid minimum or maximum days");
+            }
+    
+            const minimumTime = BigInt(minDays * 86400);
+            const maximumTime = BigInt(maxDays * 86400);
+            console.log("min days: ", minimumTime);
+            console.log("max days: ", maximumTime);
+    
+            const depositAmount = ethers.parseEther(property.depositMoney);
+    
+            await contract.mintProperty(
+                "QmdMPFAQDg9146xBN6SJoNBJDsMTJ33uCdc8aWG8qjWjEB",
+                pricePerUnitTime,
+                availableFrom,
+                minimumTime,
+                maximumTime,
+                depositAmount
+            );
+            toast.success("Transaction confirmed!", {
+                position: "top-center"
+              })
+        } catch (error) {
+            console.error("Failed to mint property:", error);
+        }
+    };
+    
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
         setSuccess('');
 
-        const formData = new FormData();
-        for (const key in property) {
-            if (key === 'images') {
-                Array.from(property.images).forEach((file) => formData.append('images', file));
-            } else {
-                formData.append(key, property[key]);
-            }
-        }
-
         try {
-            await axios.post('/api/properties', formData);
+            // toast.info("Uploading images to IPFS", { position: "top-center" });
+
+            // if (!property.images) {
+            //     throw new Error("No images selected");
+            // }
+
+            // const imageUrls = await Promise.all(
+            //     Array.from(property.images).map((image) => uploadToIPFS(image))
+            // );
+
+            // toast.info("Images uploaded to IPFS!", { position: "top-center" });
+
+            // const propertyData = {
+            //     ...property,
+            //     images: imageUrls,
+            // };
+
+            // const data = JSON.stringify({
+            //     pinataContent: propertyData,
+            //     pinataMetadata: {
+            //         name: "PropertyData.json",
+            //     },
+            // });
+
+            // toast.info("Uploading property data to IPFS", { position: "top-center" });
+
+            // const res2 = await fetch(
+            //     "https://api.pinata.cloud/pinning/pinJSONToIPFS",
+            //     {
+            //         method: "POST",
+            //         headers: {
+            //             Authorization: `Bearer ${REACT_APP_PINATA_JWT}`,
+            //             "Content-Type": "application/json",
+            //         },
+            //         body: data,
+            //     }
+            // );
+
+            // if (!res2.ok) {
+            //     throw new Error(`Failed to upload property data: ${res2.statusText}`);
+            // }
+
+            // const resData2 = await res2.json();
+            // const uri = resData2.IpfsHash;
+            // setUri(uri);
+            // console.log("Property data saved to IPFS:", uri);
+            await mintProperty();
+
             setSuccess('Property listed successfully!');
-            setProperty({
-                country: '',
-                state: '',
-                city: '',
-                address: '',
-                images: null,
-                description: '',
-                furnishing: '',
-                advanceMoney: '',
-                area: '',
-                type: '',
-                parking: [],
-                availableFrom: '',
-                availableFor: [],
-                minDays: '',
-                maxDays: '',
-                contactNumber: ''
-            });
+            // setProperty({
+            //     // country: '',
+            //     // state: '',
+            //     // city: '',
+            //     address: '',
+            //     images: null,
+            //     description: '',
+            //     furnishing: '',
+            //     depositMoney: '',
+            //     area: '',
+            //     type: '',
+            //     parking: [],
+            //     availableFrom: '',
+            //     availableFor: [],
+            //     minDays: '',
+            //     maxDays: '',
+            //     contactNumber: ''
+            // });
+
+
         } catch (error) {
+            console.error("Failed to upload property data to IPFS:", error);
             setError('Failed to list property.');
         } finally {
             setLoading(false);
@@ -102,9 +222,9 @@ const PropertyForm = () => {
 
                 <div>
                     <h3 className="text-xl font-semibold mb-2">Location</h3>
-                    <input className='hidden' type="text" name="country" value={property.country} onChange={handleChange} placeholder="Country" required />
+                    {/* <input className='hidden' type="text" name="country" value={property.country} onChange={handleChange} placeholder="Country" required />
                     <input className='hidden' type="text" name="state" value={property.state} onChange={handleChange} placeholder="State" required />
-                    <input className='hidden' type="text" name="city" value={property.city} onChange={handleChange} placeholder="City" required />
+                    <input className='hidden' type="text" name="city" value={property.city} onChange={handleChange} placeholder="City" required /> */}
                     <input type="text" name="address" value={property.address} onChange={handleChange} placeholder="Address" required />
                 </div>
 
@@ -129,8 +249,13 @@ const PropertyForm = () => {
                 </div>
 
                 <div>
-                    <h3 className="text-xl font-semibold mb-2">Advance Money</h3>
-                    <input type="number" name="advanceMoney" value={property.advanceMoney} onChange={handleChange} placeholder="Amount" required />
+                    <h3 className="text-xl font-semibold mb-2">Price Per Day</h3>
+                    <input type="number" name="pricePerDay" value={property.pricePerDay} onChange={handleChange} placeholder="Amount" required />
+                </div>
+
+                <div>
+                    <h3 className="text-xl font-semibold mb-2">Deposit Money</h3>
+                    <input type="number" name="depositMoney" value={property.depositMoney} onChange={handleChange} placeholder="Amount" required />
                 </div>
 
                 <div>

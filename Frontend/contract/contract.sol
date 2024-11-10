@@ -1,90 +1,94 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract RentalPropertyPlatform is ERC721, Ownable {
-    uint256 public nextTokenId;
-    IERC20 public paymentToken;
+contract Rental is Ownable(msg.sender), ERC721URIStorage, ReentrancyGuard {
+    uint256 nextTokenId;
+
+    constructor() ERC721("Rental Property", "PROPERTY") {
+        nextTokenId = 0;
+    }
+
+    struct Property {
+        address owner;
+        uint256 tokenId;
+        string tokenUri;
+        uint256 pricePerUnitTime;
+        uint256 minimumTime;
+        uint256 maximumTime;
+        uint256 depositMoney;
+    }
 
     struct Agreement {
-        address landlord;
+        uint256 tokenId;
+        address owner;
         address tenant;
-        uint256 propertyId;
-        uint256 rentAmount;
-        uint256 startDate;
-        uint256 endDate;
+        uint256 startTimestamp;
+        uint256 endTimestamp;
+        uint256 amount;
+        uint256 depositMoney;
     }
 
-    mapping(uint256 => string) private _tokenURIs;
+        struct AgreementRequest {
+        uint256 tokenId;
+        address owner;
+        address tenant;
+        uint256 startTimestamp;
+        uint256 endTimestamp;
+        uint256 amount;
+        uint256 depositMoney;
+        bool    isRentPaid;
+    }
+
+    mapping(uint256 => Property) public properties;
     mapping(uint256 => Agreement) public agreements;
+    mapping (uint256 => AgreementRequest) public agreementRequests;
 
-    event PropertyMinted(uint256 tokenId, address owner, string tokenURI);
-    event AgreementCreated(uint256 propertyId, address landlord, address tenant, uint256 rentAmount, uint256 startDate, uint256 endDate);
-    event RentPaid(uint256 propertyId, uint256 amount, address tenant);
-    event RentPaidWithToken(uint256 propertyId, uint256 amount, address tenant);
+    event PropertyMinted(uint256 tokenId, address owner, string indexed tokenURI);
 
-    constructor(address tokenAddress) ERC721("RentalProperty", "RENT") {
-        paymentToken = IERC20(tokenAddress);
+
+    function mintProperty(string memory _tokenUri, uint256 pricePerUnitTime, uint256 minimumTime, uint256 maximumTime, uint256 depositMoney) external onlyOwner {
+        uint256 tokenId = nextTokenId++;
+        Property memory property = Property({owner: msg.sender, tokenId: tokenId, tokenUri: _tokenUri, pricePerUnitTime: pricePerUnitTime, minimumTime:minimumTime, maximumTime: maximumTime, depositMoney: depositMoney});
+        properties[tokenId] = property;
+        _mint(msg.sender, tokenId);
+        _setTokenURI(tokenId, _tokenUri);
     }
 
-    // Mint a new rental property NFT
-    function mintProperty(address to, string memory tokenURI) external onlyOwner returns (uint256) {
-        uint256 tokenId = nextTokenId;
-        _mint(to, tokenId);
-        _setTokenURI(tokenId, tokenURI);
-        nextTokenId++;
-        emit PropertyMinted(tokenId, to, tokenURI);
-        return tokenId;
+    function createAgreementRequest(uint256 _tokenId, address _tenant, uint256 startTimestamp, uint256 endTimestamp) public payable {
+        Property memory property = properties[_tokenId];
+        require(msg.sender == property.owner, "Only owner can create agreement!");
+        require(startTimestamp>= block.timestamp, "Incorrect time!");
+        require(endTimestamp > block.timestamp, "Invalid time!");
+        uint256 duration  = property.pricePerUnitTime;
+        require(duration>= property.minimumTime, "Select the time period greater than mentioned by owner!");
+        require(duration<= property.maximumTime, "Select the time period less than mentioned by owner!");
+        uint256 amount = (endTimestamp-startTimestamp)* duration;
+        AgreementRequest memory agreementRequest = AgreementRequest({tokenId: _tokenId, owner: property.owner, tenant: _tenant, startTimestamp: startTimestamp, endTimestamp: endTimestamp, amount: amount, depositMoney: property.depositMoney, isRentPaid: false});
+        agreementRequests[_tokenId] = agreementRequest;
     }
 
-    function _setTokenURI(uint256 tokenId, string memory tokenURI) internal virtual {
-        require(_exists(tokenId), "ERC721Metadata: URI set of nonexistent token");
-        _tokenURIs[tokenId] = tokenURI;
-    }
+    function confirmAgreementAndPayRent(uint256 _tokenId) public payable {
+        AgreementRequest storage agreementRequest = agreementRequests[_tokenId];
+        require(msg.sender == agreementRequest.tenant, "Only the specified tenant can confirm the agreement!");
+        require(msg.value == agreementRequest.amount+ agreementRequest.depositMoney, "Invalid amount!");
+        require(!agreementRequest.isRentPaid, "Rent is already paid!");
 
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-        return _tokenURIs[tokenId];
-    }
+        agreementRequest.isRentPaid = true;
 
-    // Create a rental agreement
-    function createAgreement(
-        address tenant,
-        uint256 propertyId,
-        uint256 rentAmount,
-        uint256 startDate,
-        uint256 endDate
-    ) external {
-        require(ownerOf(propertyId) == msg.sender, "Caller is not the property owner");
-        agreements[propertyId] = Agreement({
-            landlord: msg.sender,
-            tenant: tenant,
-            propertyId: propertyId,
-            rentAmount: rentAmount,
-            startDate: startDate,
-            endDate: endDate
+        agreements[_tokenId] = Agreement({
+            tokenId: agreementRequest.tokenId,
+            owner: agreementRequest.owner,
+            tenant: agreementRequest.tenant,
+            startTimestamp: agreementRequest.startTimestamp,
+            endTimestamp: agreementRequest.endTimestamp,
+            amount: agreementRequest.amount,
+            depositMoney: agreementRequest.depositMoney
         });
-        emit AgreementCreated(propertyId, msg.sender, tenant, rentAmount, startDate, endDate);
-    }
 
-    // Pay rent in Ether
-    function payRent(uint256 propertyId) external payable {
-        Agreement storage agreement = agreements[propertyId];
-        require(msg.sender == agreement.tenant, "Caller is not the tenant");
-        require(msg.value == agreement.rentAmount, "Incorrect rent amount");
-        payable(agreement.landlord).transfer(msg.value);
-        emit RentPaid(propertyId, msg.value, msg.sender);
-    }
-
-    // Pay rent with ERC20 token
-    function payRentWithToken(uint256 propertyId, uint256 amount) external {
-        Agreement memory agreement = agreements[propertyId];
-        require(msg.sender == agreement.tenant, "Caller is not the tenant");
-        require(amount >= agreement.rentAmount, "Incorrect rent amount");
-        require(paymentToken.transferFrom(msg.sender, agreement.landlord, amount), "Token transfer failed");
-        emit RentPaidWithToken(propertyId, amount, msg.sender);
+        payable(agreementRequest.owner).transfer(agreementRequest.amount);
     }
 }
