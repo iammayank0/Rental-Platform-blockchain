@@ -6,7 +6,7 @@ import { AlchemyProvider } from 'ethers';
 import { Wallet } from 'ethers';
 
 // const contractAddress = '0xe12049a66792C836bcE6d0f48093Cef736DF6Baf';
-const contractAddress = "0xc8a162E1d15a07c6adF9dd821ff2a0E120c875C0";
+const contractAddress = "0xEa9A23EE9567cB9E27f4c3b8D8A7b00AF2Df4502";
 // let contract, properties = [];
 
 const contractInstance = async () => {
