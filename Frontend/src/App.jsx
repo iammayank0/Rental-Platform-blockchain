@@ -4,7 +4,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import Home from './pages/Home';
 import LandlordDashboard from './components/LandlordDashboard';
 import TenantDashboard from './components/TenantDashboard';
-import Display from './components/Display';
 import PropertyDetail from './pages/PropertyDetail';
 import SignUp from './pages/SignUp';
 import Login from './pages/Login';
@@ -16,6 +15,7 @@ import { connectWallet } from './hooks/connectWallet';
 import { BrowserProvider } from 'ethers';
 import abi from './contract/abi.json'
 import { Contract } from 'ethers';
+import PropertyCard from './components/PropertyCard';
 
 
 
@@ -103,7 +103,7 @@ const App = () => {
                                     <Route path="/tenant-dashboard" element={<TenantDashboard />} />
                                     <Route path="/property/:propertyId" element={<PropertyDetail />} />
                                     <Route path="/add-property" element={<PropertyForm contract = {contract} account = {account} setContract = {setContract} />} />
-                                    <Route path="/display" element={<Display/>}></Route>
+                                    <Route path="/display" element={<PropertyCard/>}></Route>
                                 </Routes>
 
                             </main>
