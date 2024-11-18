@@ -1,13 +1,30 @@
-import React from 'react';
-import { CardContainer, CardBody, CardItem } from "./ui/3dCard"; 
-import { property } from '../data/data'; 
+import React, { useEffect, useState } from 'react';
+import { CardContainer, CardBody, CardItem } from "./ui/3dCard"; // Adjust the import as necessary
+import { property } from '../data/data'; // Adjust the path to the data file as necessary
+import { getProperties } from '../hooks/contractData';
 
 
 const PropertyCard = () => {
+  const [properties, setProperties] = useState([]);
+  console.log("Into the property card");
+  useEffect(()=> {
+    const loadProperties = async() => {
+      try {
+        const properties = await getProperties();
+        console.log("Loaded properties: " + properties);
+        setProperties(properties);
+        console.log("Set properties: " + properties);
+        
+      } catch (error) {
+        console.error("Error loading properties", error);
+      }
+    }
+   loadProperties();
+  },[])
   return (
     <div className="flex flex-wrap gap-4 justify-center">
       {property.length > 0 ? (
-        property.map((prop) => (
+        properties.map((prop) => (
           <CardContainer key={prop.id} className="property-card">
             <CardBody className="bg-gray-50 dark:bg-black border dark:border-white rounded-xl p-6 shadow-lg">
               {/* Address */}
