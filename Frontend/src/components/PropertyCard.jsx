@@ -1,6 +1,6 @@
 import React from 'react';
-import { CardContainer, CardBody, CardItem } from "./ui/3dCard"; // Adjust the import as necessary
-import { property } from '../data/data'; // Adjust the path to the data file as necessary
+import { CardContainer, CardBody, CardItem } from "./ui/3dCard"; 
+import { property } from '../data/data'; 
 
 
 const PropertyCard = () => {
